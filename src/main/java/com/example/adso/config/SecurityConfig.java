@@ -25,32 +25,65 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
-            .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/products").hasAuthority("ADMIN")
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/products").hasAnyAuthority("ADMIN", "USER")
-                .anyRequest().authenticated()
-            )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authenticationProvider(authenticationProvider)
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(csrf -> csrf.disable())
+
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                .authorizeHttpRequests(authz -> authz
+
+                        // Permitir preflight OPTIONS
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Endpoints públicos
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // Productos
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/products").hasAuthority("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/products").hasAnyAuthority("ADMIN", "USER")
+
+                        .anyRequest().authenticated()
+                )
+
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                .authenticationProvider(authenticationProvider)
+
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
+    // Configuración ÚNICA de CORS (ya sin duplicados)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("https://pt-frontend-xb5e.onrender.com", "http://localhost:4200"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+
         config.setAllowCredentials(true);
+
+        config.setAllowedOriginPatterns(List.of(
+                "https://ang-front-end.onrender.com",
+                "http://localhost:4200"
+        ));
+
+        config.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
+        ));
+
+        config.setAllowedHeaders(List.of(
+                "Origin", "Content-Type", "Accept", "Authorization"
+        ));
+
+        config.setExposedHeaders(List.of(
+                "Authorization"
+        ));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
 }

@@ -29,17 +29,18 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
 
+                // Habilitar CORS usando el único bean válido
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 .authorizeHttpRequests(authz -> authz
 
-                        // Permitir preflight OPTIONS
+                        // Permitir preflight
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
 
                         // Endpoints públicos
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // Productos
+                        // Productos protegidos
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/products").hasAuthority("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/products").hasAnyAuthority("ADMIN", "USER")
 
@@ -57,9 +58,10 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Configuración ÚNICA de CORS (ya sin duplicados)
+    // ÚNICA configuración CORS válida
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowCredentials(true);

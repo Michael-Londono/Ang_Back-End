@@ -18,8 +18,8 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    // (Mantenemos tu clave secreta existente)
-    private static final String SECRET_KEY = "U3VwZXJEdXBlclNlY3JldEtleUZvckpXVEV4YW1wbGUxMjM0NTY="; 
+    private static final String SECRET_KEY =
+            "U3VwZXJEdXBlclNlY3JldEtleUZvckpXVEV4YW1wbGUxMjM0NTY=";
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -34,29 +34,25 @@ public class JwtService {
         return generateToken(new HashMap<>(), userDetails);
     }
 
-    // --- AQUÍ ESTÁ LA CORRECCIÓN PRINCIPAL ---
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
-        
-        // 2. Verificamos si userDetails es de nuestra clase 'User' para obtener el rol
-        if (userDetails instanceof User customUser) {
-            extraClaims.put("role", customUser.getRole().name()); 
-            // Opcional: También podrías agregar el ID si lo necesitas en el front
-            extraClaims.put("userId", customUser.getId());
+
+        if (userDetails instanceof User user) {
+            extraClaims.put("role", user.getRole().name());
+            extraClaims.put("userId", user.getId());
         }
 
         return Jwts.builder()
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) 
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
-    // ------------------------------------------
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        String username = extractUsername(token);
+        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {

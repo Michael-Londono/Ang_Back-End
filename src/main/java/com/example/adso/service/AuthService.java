@@ -1,6 +1,5 @@
 package com.example.adso.service;
 
-
 import com.example.adso.model.Role;
 import com.example.adso.model.User;
 import com.example.adso.dto.AuthResponse;
@@ -19,40 +18,37 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder; // Para encriptar la contraseña
+    private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final AuthenticationManager authenticationManager; // Para gestionar la autenticación
+    private final AuthenticationManager authenticationManager;
 
     /**
-     * Registra un nuevo usuario (solo rol USER).
+     * Registra un nuevo usuario (solo USER).
      */
     public AuthResponse register(RegisterRequest request) {
-        // Verificamos si el usuario ya existe
+
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Error: El nombre de usuario ya está en uso.");
         }
 
-        // Creamos el nuevo usuario
         User user = User.builder()
                 .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword())) // Encriptamos la contraseña
-                .role(Role.USER) // Todos los registros son como USER
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(Role.USER)
                 .build();
 
-        // Guardamos el usuario en el "repositorio" en memoria
         userRepository.save(user);
 
-        // Generamos el token JWT
         String jwtToken = jwtService.generateToken(user);
 
-        // Devolvemos la respuesta con el token
         return AuthResponse.builder().token(jwtToken).build();
     }
 
     /**
-     * Autentica un usuario (USER o ADMIN) y devuelve un token.
+     * Autentica un usuario y devuelve token.
      */
     public AuthResponse login(LoginRequest request) {
+
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -61,19 +57,14 @@ public class AuthService {
                     )
             );
         } catch (Exception e) {
-        throw new RuntimeException("Usuario o contraseña incorrectos"); // Devuelve 401 desde un @ControllerAdvice o ResponseStatusException
+            throw new RuntimeException("Usuario o contraseña incorrectos");
         }
 
-
-
-        // Si la autenticación fue exitosa, buscamos al usuario
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
-        // Generamos el token JWT
         String jwtToken = jwtService.generateToken(user);
 
-        // Devolvemos la respuesta con el token
         return AuthResponse.builder().token(jwtToken).build();
     }
 }
